@@ -1,8 +1,6 @@
 package edu.gatech.se.remotedebugging.recording;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.UnknownHostException;
 
 import javax.servlet.ServletException;
@@ -13,14 +11,12 @@ import javax.servlet.http.HttpServletResponse;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
-import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
-import com.mongodb.util.JSON;
 
 public class RecordingUpdaterServlet extends HttpServlet {
 	 private MongoClient mongoClient = null;
 	 private DB db = null;
-	 private DBCollection connection = null;
+	 private DBCollection collection = null;
 
 	/**
 	 * 
@@ -31,7 +27,7 @@ public class RecordingUpdaterServlet extends HttpServlet {
 		try {
 			mongoClient = new MongoClient();
 			db = mongoClient.getDB("remotedebugging");
-			connection = db.getCollection("recordings");
+			collection = db.getCollection("recordings");
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		}
@@ -40,20 +36,41 @@ public class RecordingUpdaterServlet extends HttpServlet {
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp)
 			throws ServletException, IOException {
-		String targetMachine = req.getParameter("targetMachine");
+		String targetMachine = getClientIP(req);
 		String logId = req.getParameter("logId");
 		String withException = req.getParameter("withException");
 		String codeVersion = req.getParameter("codeVersion");
 		
+		BasicDBObject query = new BasicDBObject("targetMachine", targetMachine)
+		                      .append("logId", logId);
+	
 		BasicDBObject doc = new BasicDBObject("targetMachine", targetMachine).
                 append("logId", logId).
                 append("withException", withException).
                 append("codeVersion", codeVersion);
 		
-
-		//connection.insert(doc);
-		
-		
+		collection.update(query, doc, true, false);
+	}
+	
+	private String getClientIP(HttpServletRequest request){
+		String ip = request.getHeader("X-Forwarded-For");  
+        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {  
+            ip = request.getHeader("Proxy-Client-IP");  
+        }  
+        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {  
+            ip = request.getHeader("WL-Proxy-Client-IP");  
+        }  
+        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {  
+            ip = request.getHeader("HTTP_CLIENT_IP");  
+        }  
+        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {  
+            ip = request.getHeader("HTTP_X_FORWARDED_FOR");  
+        }  
+        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {  
+            ip = request.getRemoteAddr();  
+        }  
+        
+        return ip;  
 	}
 
 }
