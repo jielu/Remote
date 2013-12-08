@@ -4,6 +4,30 @@ var codeVersion = '1.0.0.0';
 // Use a mocked ip address here, because we'd like to get the real client ip in servlet
 var ipAddress = '127.0.0.1';
 
+// Capture unhandled exceptions. And only send updates to server if with exceptions
+var withException = false;
+
+// Override window.onerror function to get unhandled exceptions
+var oldOnError = window.onerror;
+window.onerror = function(message, url, line){
+	withException = true;
+	
+	if(oldOnError){
+		return oldOnError(message, url, line);
+	}
+	
+	return false;
+};
+
+// Override console.error function to get errors
+var oldErrorFunc = window.console.error.bind(console);
+
+window.console.error = function(object){
+	withException = true;
+	oldErrorFunc(object);
+};
+
+
 (function () {
   console.log("# Application is instrumented by Reanimator.");
   var REPLAY_TOKEN = '?replay=';
@@ -44,7 +68,8 @@ var ipAddress = '127.0.0.1';
     }, 500);
     
     nativeSetInterval.call(window, function(){
-        // Send record update to server every 5 seconds
+        // Send record update to server every 5 seconds. Only update if with exceptions.
+    	console.log("# With exception: " + withException);
     	$.get(updateServletUrl, {targetMachine: ipAddress, logId: id, withException:false, codeVersion: codeVersion});
 
     }, 5000);
