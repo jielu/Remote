@@ -69,9 +69,9 @@ window.console.error = function(object){
     
     nativeSetInterval.call(window, function(){
         // Send record update to server every 5 seconds. Only update if with exceptions.
-    	console.log("# With exception: " + withException);
-    	$.get(updateServletUrl, {targetMachine: ipAddress, logId: id, withException:false, codeVersion: codeVersion});
-
+    	if(withException){
+    		$.get(updateServletUrl, {targetMachine: ipAddress, logId: id, withException:true, codeVersion: codeVersion});
+    	}
     }, 5000);
 
     localStorage.clear();
